@@ -56,7 +56,7 @@ fn prog(percent: usize) {
 }
 
 fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
-    let allowed: [&str; 24] = [
+    let allowed: [&str; 34] = [
         "md","markdown","txt","rst","adoc",
         "rs","py","java","js","jsx","ts","tsx","go","c","cpp","h","hpp","swift","kt","kts","rb","php",
         "html","htm","xml","yaml","yml","json","toml","ini","cfg","sh","bash","zsh"

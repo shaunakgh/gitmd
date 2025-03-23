@@ -55,28 +55,35 @@ fn prog(percent: usize) {
     io::stdout().flush().unwrap();
 }
 
+fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
+    if !dir.exists() {
+        return Err(format!("Directory not found: {}", dir.display()).into());
+    }
+
+    for entry in fs::read_dir(dir)? {
+        let entry = entry?;
+        let path = entry.path();
+
+        if path.is_dir() {
+            visit_dirs(&path, file_dict)?;
+        } else {
+            let name = path.strip_prefix(dir)?
+                .to_string_lossy()
+                .to_string();
+            println!("Adding file → {}", name);
+            let content = fs::read_to_string(&path)?;
+            file_dict.insert(name, content);
+        }
+    }
+    Ok(())
+}
+
 fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>> {
     let mut file_dict = HashMap::new();
-    fn visit_dirs(dir: &Path, file_dict: &mut std::collections::HashMap<String, String>) -> Result<(), Box<dyn Error>> 
-    {
-        if dir.is_dir() {
-            for entry in fs::read_dir(dir)? {
-                let entry = entry?;
-                let path = entry.path();
-                if path.is_dir() {
-                    visit_dirs(&path, file_dict)?;
-                } else {
-                    let name = path.file_name().unwrap().to_string_lossy().to_string();
-                    let content = fs::read_to_string(&path)?;
-                    file_dict.insert(name, content);
-                }
-            }
-        }
-        Ok(())
-    }
     visit_dirs(Path::new(path), &mut file_dict)?;
 
     let all_files = serde_json::to_string(&file_dict)?;
+    println!("{}", all_files);
     let prompt = match _type {
         1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}", all_files),
         2 => format!("Generate a blog post in Markdown using these files:\n\n{}", all_files),

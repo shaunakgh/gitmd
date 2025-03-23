@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let output = gen_md(&cli.path, &cli.model, mode)?;
     fs::write("output.md", &output)?;
     println!(
-        "{} {}",
+        "\n{} {}",
         "!".bright_yellow().bold(),
         "File has been saved to output.md. You might need to remove excess output and meta-comments.".blue().italic()
     );
@@ -98,9 +98,9 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
 
     let all_files = serde_json::to_string(&file_dict)?;
     let prompt = match _type {
-        1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}.", all_files),
-        2 => format!("Generate a blog post in Markdown using these files:\n\n{}.", all_files),
-        _ => format!("Compose a scholarly write‑up in Markdown using these files:\n\n{}.", all_files),
+        1 => format!("Generate a README.md file with a but not limited to a brief overview and description of the project suitable for a GitHub repository using these files:\n\n{}.", all_files),
+        2 => format!("Generate a blog post in Markdown with a but not limited to a brief overview and description of the project using these files:\n\n{}.", all_files),
+        _ => format!("Compose a scholarly write‑up in Markdown with a but not limited to a brief overview and description of the project using these files:\n\n{}.", all_files),
     };
 
     for i in 0..=100 {

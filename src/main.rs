@@ -56,9 +56,7 @@ fn prog(percent: usize) {
 }
 
 fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
-    if !dir.exists() {
-        return Err(format!("Directory not found: {}", dir.display()).into());
-    }
+    if !dir.exists() { return Err(format!("Directory not found: {}", dir.display()).into()); }
 
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
@@ -70,8 +68,16 @@ fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(),
             let name = path.strip_prefix(dir)?
                 .to_string_lossy()
                 .to_string();
-            println!("Adding file → {}", name);
-            let content = fs::read_to_string(&path)?;
+
+            let content = match fs::read_to_string(&path) {
+                Ok(text) => text,
+                Err(err) if err.kind() == std::io::ErrorKind::InvalidData => {
+                    eprintln!("Skipping non‑UTF8 file → {}", name);
+                    continue;
+                }
+                Err(err) => return Err(err.into()),
+            };
+
             file_dict.insert(name, content);
         }
     }

@@ -113,7 +113,6 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
         if child.try_wait()?.is_some() { break; }
         thread::sleep(Duration::from_millis(20));
     }
-    println!();
 
     let output = child.wait_with_output()?;
     if !output.status.success() {

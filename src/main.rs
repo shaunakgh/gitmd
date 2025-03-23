@@ -9,7 +9,6 @@ use std::{
     time::Duration,
 };
 use clap::{Parser, ArgGroup};
-use regex::Regex;
 use colored::*;
 
 #[derive(Parser)]
@@ -41,7 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!(
         "{} {}",
         "!".bright_yellow().bold(),
-        "File has been saved to output.md".blue().italic()
+        "File has been saved to output.md. You might need to remove excess output and meta-comments.".blue().italic()
     );
     Ok(())
 }
@@ -99,31 +98,23 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
 
     let all_files = serde_json::to_string(&file_dict)?;
     let prompt = match _type {
-        1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
-        2 => format!("Generate a blog post in Markdown using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
-        _ => format!("Compose a scholarly write‑up in Markdown using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
+        1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}.", all_files),
+        2 => format!("Generate a blog post in Markdown using these files:\n\n{}.", all_files),
+        _ => format!("Compose a scholarly write‑up in Markdown using these files:\n\n{}.", all_files),
     };
-
-    let mut child = Command::new("ollama")
-        .args(&["run", model, &prompt])
-        .spawn()?;
 
     for i in 0..=100 {
         prog(i);
-        if child.try_wait()?.is_some() { break; }
         thread::sleep(Duration::from_millis(20));
     }
 
-    let output = child.wait_with_output()?;
-    if !output.status.success() {
-        return Err(String::from_utf8_lossy(&output.stderr).into());
+    let output = Command::new("ollama")
+        .args(&["run", model, &prompt])
+        .output()?;
+
+    if output.status.success() {
+        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        Err(String::from_utf8_lossy(&output.stderr).into())
     }
-
-    let raw = String::from_utf8_lossy(&output.stdout);
-    let cleaned = Regex::new(r"(?si)<think>.*?</think>")?
-        .replace_all(&raw, "")
-        .trim()
-        .to_string();
-
-    Ok(cleaned)
 }

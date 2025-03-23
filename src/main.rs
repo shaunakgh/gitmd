@@ -56,34 +56,38 @@ fn prog(percent: usize) {
 }
 
 fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
+    let allowed: [&str; 24] = [
+        "md","markdown","txt","rst","adoc",
+        "rs","py","java","js","jsx","ts","tsx","go","c","cpp","h","hpp","swift","kt","kts","rb","php",
+        "html","htm","xml","yaml","yml","json","toml","ini","cfg","sh","bash","zsh"
+    ];
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
 
-        // Skip Git metadata
         if path.components().any(|c| c.as_os_str() == ".git") {
             continue;
         }
 
         if path.is_dir() {
             visit_dirs(&path, file_dict)?;
-        } else {
-            // Only include common text extensions
-            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-                match ext {
-                    "md" | "rs" | "py" | "toml" | "json" => {}
-                    _ => continue,
-                }
-            } else {
+            continue;
+        }
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()).map(|s| s.to_lowercase()) {
+            if !allowed.contains(&ext.as_str()) {
                 continue;
             }
-
-            let name = path.strip_prefix(dir)?.to_string_lossy().to_string();
-            match fs::read_to_string(&path) {
-                Ok(contents) => { file_dict.insert(name, contents); }
-                Err(err) if err.kind() == std::io::ErrorKind::InvalidData => continue,
-                Err(err) => return Err(err.into()),
+        } else {
+            continue;
+        }
+        let name = path.strip_prefix(dir)?.to_string_lossy().to_string();
+        match fs::read_to_string(&path) {
+            Ok(contents) => { file_dict.insert(name, contents); }
+            Err(err) if err.kind() == std::io::ErrorKind::InvalidData => {
+                eprintln!("Skipping non‑UTF8 file → {}", name);
             }
+            Err(err) => return Err(err.into()),
         }
     }
     Ok(())
@@ -94,11 +98,10 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
     visit_dirs(Path::new(path), &mut file_dict)?;
 
     let all_files = serde_json::to_string(&file_dict)?;
-    println!("{}", all_files);
     let prompt = match _type {
-        1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}", all_files),
-        2 => format!("Generate a blog post in Markdown using these files:\n\n{}", all_files),
-        _ => format!("Compose a scholarly write‑up in Markdown using these files:\n\n{}", all_files),
+        1 => format!("Generate a README.md file suitable for a GitHub repository using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
+        2 => format!("Generate a blog post in Markdown using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
+        _ => format!("Compose a scholarly write‑up in Markdown using these files:\n\n{}. Do not include any prefatory remarks, explanations of format, or meta‑comments about the output.", all_files),
     };
 
     let mut child = Command::new("ollama")

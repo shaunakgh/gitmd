@@ -56,29 +56,34 @@ fn prog(percent: usize) {
 }
 
 fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
-    if !dir.exists() { return Err(format!("Directory not found: {}", dir.display()).into()); }
-
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let path = entry.path();
 
+        // Skip Git metadata
+        if path.components().any(|c| c.as_os_str() == ".git") {
+            continue;
+        }
+
         if path.is_dir() {
             visit_dirs(&path, file_dict)?;
         } else {
-            let name = path.strip_prefix(dir)?
-                .to_string_lossy()
-                .to_string();
-
-            let content = match fs::read_to_string(&path) {
-                Ok(text) => text,
-                Err(err) if err.kind() == std::io::ErrorKind::InvalidData => {
-                    eprintln!("Skipping non‑UTF8 file → {}", name);
-                    continue;
+            // Only include common text extensions
+            if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+                match ext {
+                    "md" | "rs" | "py" | "toml" | "json" => {}
+                    _ => continue,
                 }
-                Err(err) => return Err(err.into()),
-            };
+            } else {
+                continue;
+            }
 
-            file_dict.insert(name, content);
+            let name = path.strip_prefix(dir)?.to_string_lossy().to_string();
+            match fs::read_to_string(&path) {
+                Ok(contents) => { file_dict.insert(name, contents); }
+                Err(err) if err.kind() == std::io::ErrorKind::InvalidData => continue,
+                Err(err) => return Err(err.into()),
+            }
         }
     }
     Ok(())

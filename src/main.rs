@@ -32,19 +32,6 @@ struct Cli {
     writeup: bool,
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let cli = Cli::parse();
-    let mode = if cli.readme { 1 } else if cli.blog { 2 } else { 3 };
-    let output = gen_md(&cli.path, &cli.model, mode)?;
-    fs::write("output.md", &output)?;
-    println!(
-        "\n{} {}",
-        "!".bright_yellow().bold(),
-        "File has been saved to output.md. You might need to remove excess output and meta-comments.".blue().italic()
-    );
-    Ok(())
-}
-
 fn prog(percent: usize) {
     let width = 50;
     let filled = percent * width / 100;
@@ -122,4 +109,17 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
     } else {
         Err(String::from_utf8_lossy(&output.stderr).into())
     }
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let cli = Cli::parse();
+    let mode = if cli.readme { 1 } else if cli.blog { 2 } else { 3 };
+    let output = gen_md(&cli.path, &cli.model, mode)?;
+    fs::write("output.md", &output)?;
+    println!(
+        "\n{} {}",
+        "!".bright_yellow().bold(),
+        "File has been saved to output.md. You might need to remove excess output and meta-comments.".blue().italic()
+    );
+    Ok(())
 }

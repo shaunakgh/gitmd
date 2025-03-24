@@ -98,9 +98,9 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
 
     let all_files = serde_json::to_string(&file_dict)?;
     let prompt = match _type {
-        1 => format!("Generate a README.md file with a but not limited to a brief overview and description of the project suitable for a GitHub repository using these files:\n\n{}.", all_files),
-        2 => format!("Generate a blog post in Markdown with a but not limited to a brief overview and description of the project using these files:\n\n{}.", all_files),
-        _ => format!("Compose a scholarly write‑up in Markdown with a but not limited to a brief overview and description of the project using these files:\n\n{}.", all_files),
+        1 => format!("Generate a README.md file with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide suitable for a GitHub repository using these files:\n\n{}.", all_files),
+        2 => format!("Generate a blog post in Markdown with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide using these files:\n\n{}.", all_files),
+        _ => format!("Compose a scholarly write‑up in Markdown with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide using these files:\n\n{}.", all_files),
     };
 
     for i in 0..=100 {

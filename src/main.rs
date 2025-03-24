@@ -111,9 +111,12 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
     let output = Command::new("ollama")
         .args(&["run", model, &prompt])
         .output()?;
-
+    let output_str = String::from_utf8_lossy(&output.stdout);
     if output.status.success() {
-        Ok(String::from_utf8_lossy(&output.stdout).to_string())
+        let cleaned_output = regex::Regex::new(r"<think>.*?</think>")
+        .unwrap()
+        .replace_all(&output_str, "");
+        Ok(String::from_utf8_lossy(&cleaned_output.stdout).to_string())
     } else {
         Err(String::from_utf8_lossy(&output.stderr).into())
     }

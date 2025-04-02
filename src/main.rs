@@ -19,6 +19,7 @@ use colored::*;
             .required(true)
     )
 )]
+// CLI structure
 struct Cli {
     #[arg(short, long, default_value = ".")]
     path: String,
@@ -32,6 +33,7 @@ struct Cli {
     writeup: bool,
 }
 
+// Progress bar
 fn prog(percent: usize) {
     let width = 50;
     let filled = percent * width / 100;
@@ -41,6 +43,8 @@ fn prog(percent: usize) {
     io::stdout().flush().unwrap();
 }
 
+// TODO: Fix visit_dirs functionality - some files are omitted or not recorded
+// Get all code for context in folder
 fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(), Box<dyn Error>> {
     let allowed: [&str; 34] = [
         "md","markdown","txt","rst","adoc",
@@ -79,15 +83,18 @@ fn visit_dirs(dir: &Path, file_dict: &mut HashMap<String, String>) -> Result<(),
     Ok(())
 }
 
+// GENERATION CODE
 fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>> {
     let mut file_dict = HashMap::new();
     visit_dirs(Path::new(path), &mut file_dict)?;
 
+    // Get type (README/Blog/Scholar)
     let all_files = serde_json::to_string(&file_dict)?;
     let prompt = match _type {
         1 => format!("Generate a README.md file with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide suitable for a GitHub repository using these files:\n\n{}.", all_files),
         2 => format!("Generate a blog post in Markdown with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide using these files:\n\n{}.", all_files),
-        _ => format!("Compose a scholarly write‑up in Markdown with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide using these files:\n\n{}.", all_files),
+        3 => format!("Compose a scholarly write‑up in Markdown with a but not limited to a brief overview and description of the project, a key rundown of features and a usage guide using these files:\n\n{}.", all_files),
+        _ => format!("Invalid"),
     };
 
     for i in 0..=100 {
@@ -95,11 +102,13 @@ fn gen_md(path: &str, model: &str, _type: i32) -> Result<String, Box<dyn Error>>
         thread::sleep(Duration::from_millis(20));
     }
 
+    // Init AI
     let output = Command::new("ollama")
         .args(&["run", model, &prompt])
         .output()?;
     let output_str = String::from_utf8_lossy(&output.stdout);
     if output.status.success() {
+        // Cleanup (remove excess output)
         let cleaned = regex::Regex::new(r"(?si)<think>.*?</think>")
             .unwrap()
             .replace_all(&output_str, "")

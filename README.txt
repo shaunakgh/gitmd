@@ -15,13 +15,13 @@ at https://ollama.com/download
 
 Since this program runs llama3.2 ai by default, run this command:
 ollama run llama3.2
-once finished installing the model, exit with ctrl-d§
+once finished installing the model, exit with ctrl-d
 NOTE that this model will be 2.0gb
 
 Installing
 ==========
 Run this command in your terminal session:
-git clone https://github.com/shfroom/gitmd.git && cd gitmd && cargo install --path .
+git clone https://github.com/shaunakgh/gitmd.git && cd gitmd && cargo install --path .
 Then, run this command to see if it has installed
 successfully:
 gitmd
